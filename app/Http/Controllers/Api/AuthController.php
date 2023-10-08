@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -39,12 +41,46 @@ class AuthController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'User Logged In Successfully',
-                'token' => $user->createToken("API TOKEN")->plainTextToken
+                'user' => $user,
+                'authorization' => [
+                    'token' => $user->createToken('API TOKEN')->plainTextToken,
+                    'type' => 'bearer',
+                ]
             ], 200);
         } else {
             $error = "Unauthorized";
             return response()->json(['success' => $error], 406);
         }
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'first_name' => 'required',
+            'last_name' => 'required',
+            'gender' => 'required',
+            'dob' => 'required',
+            'phone' => 'required',
+            'address' => 'required',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+        ]);
+
+        $user = User::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'gender' => $request->gender,
+            'dob' => $request->dob,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json([
+            'message' => 'User created successfully !',
+            'user' => $user
+        ], 200);
     }
 
     public function sendResetPassword(Request $request)
@@ -75,5 +111,11 @@ class AuthController extends Controller
         } else {
             return response()->json(['error' => 'This user is either inactive or not in the system !'], 406);
         }
+    }
+
+    public function logout()
+    {
+        auth()->user()->tokens()->delete();
+        return response()->json(['success' => 'User logged out successfully !'], 200);
     }
 }
