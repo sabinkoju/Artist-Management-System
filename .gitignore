@@ -26,6 +26,10 @@ dist/
 # JetBrains IDE
 .idea/
 
+# Others
+/vendor
+/public/storage
+
 # Unit test reports
 TEST*.xml
 
